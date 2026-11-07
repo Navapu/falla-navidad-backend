@@ -1,5 +1,6 @@
-import { Schema, model, models } from "mongoose";
+import mongoose from "mongoose";
 import { DEFAULT_DATES, DEFAULT_DEADLINE } from "../config.js";
+const { Schema, model, models } = mongoose;
 
 const appConfigSchema = new Schema(
   {
