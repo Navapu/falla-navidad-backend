@@ -10,11 +10,20 @@ let admin: string;
 let member: string;
 let memberId: string;
 beforeAll(async () => {
-  mongo = await MongoMemoryServer.create();
-  process.env.MONGODB_URI = mongo.getUri();
+  if (process.env.TEST_MONGODB_URI) {
+    if (!process.env.TEST_MONGODB_URI.endsWith('/falla-navidad-test')) throw new Error('Test database must be falla-navidad-test');
+    process.env.MONGODB_URI = process.env.TEST_MONGODB_URI;
+  } else {
+    mongo = await MongoMemoryServer.create();
+    process.env.MONGODB_URI = mongo.getUri();
+  }
   process.env.JWT_SECRET = 'integration-test-secret-only-123456789';
   process.env.ADMIN_SETUP_KEY = 'integration-setup';
   app = (await import('../src/app.js')).default;
+  if (process.env.TEST_MONGODB_URI) {
+    await mongoose.connect(process.env.TEST_MONGODB_URI);
+    await mongoose.connection.dropDatabase();
+  }
 }, 120000);
 afterAll(async () => { await mongoose.disconnect(); await mongo?.stop(); });
 
@@ -25,6 +34,8 @@ test('administrator email requires private setup key', async () => {
 test('registration, auth and admin permissions', async () => {
   const a = await request(app).post('/api/auth/register').send({firstName:'Admin',lastName:'Test',email:'drojannp@gmail.com',password:'testPassword123',adminSetupKey:'integration-setup'});
   expect(a.status).toBe(201); admin = a.body.token;
+  const config=(await request(app).get('/api/config')).body;
+  await request(app).put('/api/admin/config').auth(admin,{type:'bearer'}).send({deadline:'2099-12-11T22:59:00Z',enabledDates:config.enabledDates});
   const u = await request(app).post('/api/auth/register').send({firstName:'Persona',lastName:'Test',email:'member@example.com',password:'testPassword123',secretSanta:true});
   expect(u.status).toBe(201); member = u.body.token; memberId = u.body.user.id;
   expect(u.body.user.passwordHash).toBeUndefined();

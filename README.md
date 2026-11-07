@@ -23,6 +23,7 @@ Para crear la cuenta administradora, introduce `ADMIN_SETUP_KEY` en el campo que
 Importa este repositorio en Vercel y configura:
 
 - `MONGODB_URI`: conexión de MongoDB Atlas.
+- También admite `DATABASE_URL` como alternativa a `MONGODB_URI`.
 - `JWT_SECRET`: secreto largo y aleatorio.
 - `ADMIN_SETUP_KEY`: clave privada para registrar al administrador; nunca se publica en el frontend.
 - `CORS_ORIGINS`: URL pública del frontend; admite varias URLs separadas por comas.

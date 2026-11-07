@@ -1,7 +1,7 @@
 import "dotenv/config";
 
 export const env = {
-  mongoUri: process.env.MONGODB_URI ?? "",
+  mongoUri: process.env.MONGODB_URI ?? process.env.DATABASE_URL ?? "",
   jwtSecret: process.env.JWT_SECRET ?? "",
   adminSetupKey: process.env.ADMIN_SETUP_KEY ?? "",
   corsOrigins: (process.env.CORS_ORIGINS ?? "http://localhost:5173")
