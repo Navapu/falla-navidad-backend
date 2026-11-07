@@ -63,6 +63,19 @@ test('votes are one per member, both counts once per meal, closing is enforced',
   expect((await request(app).put('/api/votes/mine').auth(member,{type:'bearer'}).send({availability})).status).toBe(403);
   expect((await request(app).get('/api/results').auth(member,{type:'bearer'})).status).toBe(200);
 });
+test('range extends through January 5 and migration preserves disabled dates', async () => {
+  const { AppConfig } = await import('../src/models/AppConfig.js');
+  await AppConfig.updateOne({key:'main'},{$set:{dateRangeVersion:1,enabledDates:['2026-12-18']}});
+  const config=(await request(app).get('/api/config')).body;
+  expect(config.enabledDates).toContain('2026-12-31');
+  expect(config.enabledDates).toContain('2027-01-05');
+  expect(config.enabledDates).not.toContain('2026-12-19');
+  const enabledDates=['2026-12-18','2027-01-05'];
+  expect((await request(app).put('/api/admin/config').auth(admin,{type:'bearer'}).send({deadline:'2099-12-11T22:59:00Z',enabledDates})).status).toBe(200);
+  expect((await request(app).get('/api/config')).body.enabledDates).toEqual(enabledDates);
+  expect((await request(app).put('/api/admin/config').auth(admin,{type:'bearer'}).send({deadline:'2099-12-11T22:59:00Z',enabledDates:['2027-01-06']})).status).toBe(400);
+});
+
 test('deletion removes vote and revokes existing access tokens', async () => {
   expect((await request(app).delete(`/api/admin/users/${memberId}`).auth(admin,{type:'bearer'})).status).toBe(200);
   expect((await request(app).get('/api/auth/me').auth(member,{type:'bearer'})).status).toBe(401);

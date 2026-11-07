@@ -7,6 +7,7 @@ const appConfigSchema = new Schema(
     key: { type: String, default: "main", unique: true },
     deadline: { type: Date, default: DEFAULT_DEADLINE },
     enabledDates: { type: [String], default: DEFAULT_DATES },
+    dateRangeVersion: { type: Number, default: 2 },
   },
   { timestamps: true },
 );

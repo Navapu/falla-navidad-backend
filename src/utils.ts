@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { AppConfig } from "./models/AppConfig.js";
-import { DEFAULT_DATES, DEFAULT_DEADLINE, env } from "./config.js";
+import { DEFAULT_DATES, DEFAULT_DEADLINE, NEW_JANUARY_RANGE_DATES, env } from "./config.js";
 
 export function publicUser(user: any) {
   return {
@@ -19,9 +19,14 @@ export function createToken(user: any) {
 }
 
 export async function getConfig() {
+  // One-time expansion preserves days previously disabled by the administrator.
+  await AppConfig.updateOne(
+    { key: "main", dateRangeVersion: { $ne: 2 } },
+    { $addToSet: { enabledDates: { $each: NEW_JANUARY_RANGE_DATES } }, $set: { dateRangeVersion: 2 } },
+  );
   return AppConfig.findOneAndUpdate(
     { key: "main" },
-    { $setOnInsert: { key: "main", deadline: DEFAULT_DEADLINE, enabledDates: DEFAULT_DATES } },
+    { $setOnInsert: { key: "main", deadline: DEFAULT_DEADLINE, enabledDates: DEFAULT_DATES, dateRangeVersion: 2 } },
     { upsert: true, new: true },
   );
 }

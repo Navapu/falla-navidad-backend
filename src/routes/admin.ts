@@ -5,6 +5,7 @@ import { User } from "../models/User.js";
 import { Vote } from "../models/Vote.js";
 import { AppConfig } from "../models/AppConfig.js";
 import { getConfig, publicUser } from "../utils.js";
+import { DEFAULT_DATES } from "../config.js";
 
 const router = Router();
 router.use(requireAuth, requireAdmin);
@@ -31,14 +32,14 @@ router.get("/config", async (_req, res) => res.json({ config: await getConfig() 
 router.put("/config", async (req, res) => {
   const parsed = z.object({
     deadline: z.coerce.date(),
-    enabledDates: z.array(z.string().regex(/^2026-12-(1[89]|2\d|30)$/)).min(1).max(13),
+    enabledDates: z.array(z.string().refine(date => DEFAULT_DATES.includes(date))).min(1).max(DEFAULT_DATES.length),
   }).safeParse(req.body);
   if (!parsed.success || new Set(parsed.data?.enabledDates).size !== parsed.data?.enabledDates.length) {
     return res.status(400).json({ message: "Configuración no válida" });
   }
   const config = await AppConfig.findOneAndUpdate(
     { key: "main" },
-    { ...parsed.data, key: "main" },
+    { ...parsed.data, enabledDates: [...parsed.data.enabledDates].sort(), key: "main", dateRangeVersion: 2 },
     { upsert: true, new: true, runValidators: true },
   );
   return res.json({ config, message: "Configuración actualizada" });
