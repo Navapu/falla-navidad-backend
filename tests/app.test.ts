@@ -49,6 +49,13 @@ test('votes are one per member, both counts once per meal, closing is enforced',
   expect((await request(app).put('/api/votes/mine').auth(member,{type:'bearer'}).send({availability})).status).toBe(200);
   await request(app).put('/api/votes/mine').auth(member,{type:'bearer'}).send({availability});
   expect((await request(app).get('/api/config')).body.voterCount).toBe(1);
+  const adminUsers = await request(app).get('/api/admin/users').auth(admin,{type:'bearer'});
+  const memberVote = adminUsers.body.users.find((user:any)=>user.id===memberId);
+  expect(memberVote.availability).toHaveLength(config.enabledDates.length);
+  expect(memberVote.availability[0]).toMatchObject({date:config.enabledDates[0],choice:'both'});
+  expect(memberVote.voteUpdatedAt).toBeTruthy();
+  expect((await request(app).get('/api/admin/users').auth(member,{type:'bearer'})).status).toBe(403);
+  expect((await request(app).get('/api/admin/users')).status).toBe(401);
   const result=await request(app).get('/api/results').auth(admin,{type:'bearer'});
   expect(result.body.results[0].lunch).toBe(1); expect(result.body.results[0].dinner).toBe(1);
   const changed=await request(app).put('/api/admin/config').auth(admin,{type:'bearer'}).send({deadline:'2020-01-01T00:00:00Z',enabledDates:config.enabledDates});

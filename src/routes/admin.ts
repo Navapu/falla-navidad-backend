@@ -11,8 +11,11 @@ router.use(requireAuth, requireAdmin);
 
 router.get("/users", async (_req, res) => {
   const users = await User.find().sort({ createdAt: -1 });
-  const voters = new Set((await Vote.find().select("user")).map((vote: any) => vote.user.toString()));
-  return res.json({ users: users.map((user: any) => ({ ...publicUser(user), hasVoted: voters.has(user._id.toString()) })) });
+  const votes = new Map((await Vote.find().select("user availability updatedAt")).map((vote: any) => [vote.user.toString(), vote]));
+  return res.json({ users: users.map((user: any) => {
+    const vote = votes.get(user._id.toString());
+    return { ...publicUser(user), hasVoted: Boolean(vote), availability: vote?.availability ?? [], voteUpdatedAt: vote?.updatedAt ?? null };
+  }) });
 });
 
 router.delete("/users/:id", async (req, res) => {
